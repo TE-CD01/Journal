@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Professional Offline Trading Journal</title>
+    <style>
+        :root { --primary: #10b981; --bg: #0a0a0a; --card: #1a1a1a; --border: #334155; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #e5e7eb; margin: 0; padding: 20px; }
+        .container { max-width: 1100px; margin: auto; }
+        
+        /* Header & Buttons */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        button { cursor: pointer; padding: 10px 18px; border-radius: 8px; border: none; font-weight: 600; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: #3b82f6; color: white; }
+
+        /* Input Form */
+        .card { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid var(--border); margin-bottom: 25px; }
+        .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        input, select { background: #0f172a; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; }
+        
+        /* Preview Image Area */
+        .upload-area { grid-column: 1 / -1; border: 2px dashed var(--border); padding: 20px; text-align: center; border-radius: 8px; }
+        #preview { max-width: 100%; max-height: 200px; margin-top: 10px; border-radius: 8px; display: none; }
+
+        /* Trade List */
+        .trade-card { display: flex; gap: 20px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px; align-items: center; }
+        .trade-img { width: 180px; height: 110px; object-fit: cover; border-radius: 6px; background: #262626; cursor: pointer; }
+        .trade-info { flex-grow: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .win { color: var(--primary); font-weight: bold; }
+        .loss { color: #ef4444; font-weight: bold; }
+
+        /* Modal for Image Zoom */
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; z-index: 1000; }
+        #modal img { max-width: 90%; max-height: 90%; border: 2px solid white; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>📊 Professional Journal</h1>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn-secondary" onclick="exportJSON()">💾 Save JSON</button>
+            <button style="background: #6b7280; color: white;" onclick="document.getElementById('fileInput').click()">📂 Load File</button>
+            <input type="file" id="fileInput" style="display:none" accept=".json" onchange="importJSON(event)">
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>บันทึกการเทรดใหม่</h3>
+        <div class="grid-form">
+            <input type="date" id="date">
+            <input type="text" id="pair" placeholder="คู่เทรด (เช่น BTC/USDT)">
+            <select id="status">
+                <option value="Win">Win ✅</option>
+                <option value="Loss">Loss ❌</option>
+            </select>
+            <input type="number" id="pnl" placeholder="กำไร/ขาดทุน ($)">
+            <input type="text" id="setup" placeholder="กลยุทธ์ (เช่น Strategy #1)">
+            
+            <div class="upload-area">
+                <label>🖼️ อัปโหลดรูปกราฟ (Screenshots): </label>
+                <input type="file" id="imgInput" accept="image/*" onchange="previewImage(event)">
+                <br><img id="preview">
+            </div>
+            
+            <button class="btn-primary" onclick="addTrade()" style="grid-column: 1 / -1;">➕ บันทึกข้อมูลลงรายการ</button>
+        </div>
+    </div>
+
+    <div id="tradeLog"></div>
+</div>
+
+<div id="modal" onclick="this.style.display='none'"><img id="modalImg"></div>
+
+<script>
+    let trades = [];
+    let currentBase64 = "";
+
+    function previewImage(event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            currentBase64 = e.target.result;
+            const preview = document.getElementById('preview');
+            preview.src = currentBase64;
+            preview.style.display = "block";
+        }
+        reader.readAsDataURL(file);
+    }
+
+    function addTrade() {
+        const trade = {
+            id: Date.now(),
+            date: document.getElementById('date').value,
+            pair: document.getElementById('pair').value,
+            status: document.getElementById('status').value,
+            pnl: parseFloat(document.getElementById('pnl').value) || 0,
+            setup: document.getElementById('setup').value,
+            image: currentBase64 // เก็บรูปเป็น Base64 String
+        };
+
+        if(!trade.date || !trade.pair) return alert("กรุณากรอกข้อมูลสำคัญ");
+
+        trades.unshift(trade);
+        renderTable();
+        // Reset Form
+        document.getElementById('preview').style.display = "none";
+        currentBase64 = "";
+        document.getElementById('imgInput').value = "";
+    }
+
+    function renderTable() {
+        const log = document.getElementById('tradeLog');
+        log.innerHTML = trades.map(t => `
+            <div class="trade-card">
+                <img src="${t.image || 'https://via.placeholder.com/180x110?text=No+Image'}" 
+                     class="trade-img" onclick="zoomImg('${t.image}')">
+                <div class="trade-info">
+                    <div>
+                        <small style="color: #94a3b8;">วันที่</small><br><strong>${t.date}</strong>
+                    </div>
+                    <div>
+                        <small style="color: #94a3b8;">คู่เทรด</small><br><strong>${t.pair}</strong>
+                    </div>
+                    <div>
+                        <small style="color: #94a3b8;">กลยุทธ์</small><br><span>${t.setup}</span>
+                    </div>
+                    <div class="${t.status === 'Win' ? 'win' : 'loss'}">
+                        ${t.status}
+                    </div>
+                    <div class="${t.pnl >= 0 ? 'win' : 'loss'}">
+                        $${t.pnl.toLocaleString()}
+                    </div>
+                    <div style="text-align: right;">
+                        <button onclick="deleteTrade(${t.id})" style="background:none; color:#ef4444; border:1px solid #ef4444; padding:2px 8px;">ลบ</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function zoomImg(src) {
+        if(!src) return;
+        document.getElementById('modal').style.display = 'flex';
+        document.getElementById('modalImg').src = src;
+    }
+
+    function deleteTrade(id) {
+        trades = trades.filter(t => t.id !== id);
+        renderTable();
+    }
+
+    function exportJSON() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(trades));
+        const dl = document.createElement('a');
+        dl.setAttribute("href", dataStr);
+        dl.setAttribute("download", `Trade_Journal_${new Date().toLocaleDateString()}.json`);
+        dl.click();
+    }
+
+    function importJSON(event) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            trades = JSON.parse(e.target.result);
+            renderTable();
+        };
+        reader.readAsText(event.target.files[0]);
+    }
+</script>
+
+</body>
+</html>
