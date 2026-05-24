@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Trading Journal</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --border-color: #334155;
+            --primary: #38bdf8;
+            --success: #22c55e;
+            --danger: #ef4444;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        button {
+            background-color: var(--border-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+        button.btn-primary { background-color: var(--primary); color: #000; }
+        button.btn-success { background-color: var(--success); }
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        h2 { margin-top: 0; color: var(--primary); font-size: 1.2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;}
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            color: white;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .row-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .journal-list {
+            max-height: 700px;
+            overflow-y: auto;
+        }
+        .journal-item {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border-left: 5px solid var(--border-color);
+            cursor: pointer;
+            position: relative;
+        }
+        .journal-item:hover { border-color: var(--primary); }
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .pnl-badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        .pnl-profit { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+        .pnl-loss { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+        .item-meta { font-size: 0.85rem; color: #64748b; }
+        .delete-btn {
+            position: absolute;
+            right: 15px;
+            bottom: 15px;
+            background: var(--danger);
+            padding: 3px 8px;
+            font-size: 0.8rem;
+        }
+        .status-bar {
+            font-size: 0.9rem;
+            color: #64748b;
+            align-self: center;
+            margin-left: auto;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Smart Trading Journal</h1>
+    
+    <!-- ส่วนจัดการไฟล์ -->
+    <div class="header-actions">
+        <button class="btn-primary" onclick="openFile()">📂 เปิดไฟล์ JSON</button>
+        <button class="btn-success" onclick="saveFile()">💾 บันทึกทับไฟล์เดิม</button>
+        <button onclick="saveFileAs()">💾 บันทึกเป็นไฟล์ใหม่ (Save As)</button>
+        <div class="status-bar" id="fileStatus">สถานะ: ยังไม่ได้เปิดไฟล์ (ระบบจะเซฟลงสเปซชั่วคราวให้ก่อน)</div>
+    </div>
+
+    <div class="main-layout">
+        <!-- ฝั่งฟอร์มกรอกและแก้ไขข้อมูล -->
+        <div class="card">
+            <h2 id="formTitle">📝 เพิ่มบันทึกการเทรดใหม่</h2>
+            <form id="journalForm" onsubmit="saveEntry(event)">
+                <input type="hidden" id="entryId">
+                
+                <div class="form-group">
+                    <label>วัน-เวลา (Date/Time)</label>
+                    <input type="datetime-local" id="dateTime" required>
+                </div>
+
+                <div class="row-grid">
+                    <div class="form-group">
+                        <label>สินทรัพย์ (Asset)</label>
+                        <input type="text" id="asset" placeholder="เช่น XAU/USD, BTC" required>
+                    </div>
+                    <div class="form-group">
+                        <label>ทิศทาง (Direction)</label>
+                        <select id="direction">
+                            <option value="Buy/Long">Buy / Long</option>
+                            <option value="Sell/Short">Sell / Short</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Position Size / Leverage / Lot</label>
+                    <input type="text" id="positionSize" placeholder="เช่น 0.1 Lot หรือ 100 บัญชี 20x">
+                </div>
+
+                <div class="row-grid">
+                    <div class="form-group">
+                        <label>Entry Price</label>
+                        <input type="number" step="any" id="entryPrice">
+                    </div>
+                    <div class="form-group">
+                        <label>Exit Price</label>
+                        <input type="number" step="any" id="exitPrice">
+                    </div>
+                </div>
+
+                <div class="row-grid">
+                    <div class="form-group">
+                        <label>SL</label>
+                        <input type="number" step="any" id="slPrice">
+                    </div>
+                    <div class="form-group">
+                        <label>TP</label>
+                        <input type="number" step="any" id="tpPrice">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Net Profit/Loss ($ หรือ %)</label>
+                    <input type="number" step="any" id="pnl" placeholder="ใส่ติดลบหากขาดทุน เช่น -50" required>
+                </div>
+
+                <h2>🎯 เหตุผลและสภาวะจิตใจ</h2>
+
+                <div class="form-group">
+                    <label>Setup / Strategy (เทคนิคที่ใช้)</label>
+                    <input type="text" id="strategy" placeholder="เช่น QM Pattern M15, ทะลุแนวต้าน H1">
+                </div>
+
+                <div class="form-group">
+                    <label>Confluence (เหตุผลสนับสนุน)</label>
+                    <textarea id="confluence" rows="2" placeholder="เช่น ราคาชน Order Block + เกิด Divergence ใน RSI"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Pre-Trade Mindset (อารมณ์ก่อนเทรด)</label>
+                    <input type="text" id="mindset" placeholder="เช่น นิ่งตามแผน, FOMO กลัวตกรถ, อยากเอาคืน">
+                </div>
+
+                <div class="form-group">
+                    <label>Execution Review (การคุมแผน)</label>
+                    <select id="execution">
+                        <option value="ทำตามแผน 100%">ทำตามแผน 100%</option>
+                        <option value="ขยับ SL หนี / ปล่อยลาก">ขยับ SL หนี / ปล่อยลาก</option>
+                        <option value="รีบปิดก่อนถึงเป้าเพราะกลัว">รีบปิดก่อนถึงเป้าเพราะกลัว</option>
+                        <option value="เข้าก่อนมีสัญญาณชัดเจน">เข้าก่อนมีสัญญาณชัดเจน</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Key Lesson (บทเรียนที่ได้รับ)</label>
+                    <textarea id="lesson" rows="2" placeholder="ไม้นี้สอนอะไรเรา..."></textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn-primary" style="flex: 2;">💾 บันทึกไม้นี้ลงรายการ</button>
+                    <button type="button" onclick="resetForm()" style="flex: 1;">เคลียร์ฟอร์ม</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ฝั่งแสดงรายการที่บันทึกไว้ -->
+        <div class="card">
+            <h2>📊 รายการบันทึกการเทรดทั้งหมด</h2>
+            <div class="journal-list" id="journalList">
+                <!-- ข้อมูลการเทรดจะมาโผล่ตรงนี้ -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let journalEntries = [];
+    let fileHandle = null;
+
+    // โหลดข้อมูลจาก LocalStorage เผื่อไว้กรณีผู้ใช้ยังไม่ได้เปิดไฟล์
+    if(localStorage.getItem('temp_journal')) {
+        journalEntries = JSON.parse(localStorage.getItem('temp_journal'));
+        renderEntries();
+    }
+
+    // ฟังก์ชันบันทึกข้อมูลจากฟอร์ม (ทั้งเพิ่มใหม่และแก้ไข)
+    function saveEntry(e) {
+        e.preventDefault();
+        const id = document.getElementById('entryId').value;
+        
+        const entryData = {
+            id: id ? parseInt(id) : Date.now(),
+            dateTime: document.getElementById('dateTime').value,
+            asset: document.getElementById('asset').value,
+            direction: document.getElementById('direction').value,
+            positionSize: document.getElementById('positionSize').value,
+            entryPrice: document.getElementById('entryPrice').value,
+            exitPrice: document.getElementById('exitPrice').value,
+            slPrice: document.getElementById('slPrice').value,
+            tpPrice: document.getElementById('tpPrice').value,
+            pnl: parseFloat(document.getElementById('pnl').value),
+            strategy: document.getElementById('strategy').value,
+            confluence: document.getElementById('confluence').value,
+            mindset: document.getElementById('mindset').value,
+            execution: document.getElementById('execution').value,
+            lesson: document.getElementById('lesson').value
+        };
+
+        if (id) {
+            // เคสแก้ไข (Edit)
+            const index = journalEntries.findIndex(item => item.id === parseInt(id));
+            journalEntries[index] = entryData;
+        } else {
+            // เคสเพิ่มใหม่ (Add)
+            journalEntries.push(entryData);
+        }
+
+        // เรียงลำดับตามวันที่ล่าสุดขึ้นก่อน
+        journalEntries.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
+
+        saveToLocalStorage();
+        renderEntries();
+        resetForm();
+    }
+
+    // ฟังก์ชันแสดงรายการเทรดในหน้าเว็บ
+    function renderEntries() {
+        const listContainer = document.getElementById('journalList');
+        listContainer.innerHTML = '';
+
+        journalEntries.forEach(entry => {
+            const isProfit = entry.pnl >= 0;
+            const item = document.createElement('div');
+            item.className = 'journal-item';
+            item.style.borderLeftColor = isProfit ? 'var(--success)' : 'var(--danger)';
+            item.setAttribute('onclick', `editEntry(${entry.id})`);
+
+            item.innerHTML = `
+                <div class="item-header">
+                    <span>${entry.asset} (${entry.direction})</span>
+                    <span class="pnl-badge ${isProfit ? 'pnl-profit' : 'pnl-loss'}">${isProfit ? '+' : ''}${entry.pnl}</span>
+                </div>
+                <div class="item-meta">
+                    📅 ${entry.dateTime.replace('T', ' ')} | 🧠 Setup: ${entry.strategy || 'ไม่ได้ระบุ'}
+                </div>
+                <div style="font-size:0.85rem; margin-top:5px; color:#cbd5e1;">
+                    💬 ${entry.lesson ? entry.lesson : '-'}
+                </div>
+                <button class="delete-btn" onclick="deleteEntry(event, ${entry.id})">ลบ</button>
+            `;
+            listContainer.appendChild(item);
+        });
+    }
+
+    // ดึงข้อมูลเก่าขึ้นมาบนฟอร์มเพื่อแก้ไข
+    function editEntry(id) {
+        const entry = journalEntries.find(item => item.id === id);
+        if (!entry) return;
+
+        document.getElementById('formTitle').innerText = "✏️ แก้ไขบันทึกการเทรด";
+        document.getElementById('entryId').value = entry.id;
+        document.getElementById('dateTime').value = entry.dateTime;
+        document.getElementById('asset').value = entry.asset;
+        document.getElementById('direction').value = entry.direction;
+        document.getElementById('positionSize').value = entry.positionSize;
+        document.getElementById('entryPrice').value = entry.entryPrice;
+        document.getElementById('exitPrice').value = entry.exitPrice;
+        document.getElementById('slPrice').value = entry.slPrice;
+        document.getElementById('tpPrice').value = entry.tpPrice;
+        document.getElementById('pnl').value = entry.pnl;
+        document.getElementById('strategy').value = entry.strategy;
+        document.getElementById('confluence').value = entry.confluence;
+        document.getElementById('mindset').value = entry.mindset;
+        document.getElementById('execution').value = entry.execution;
+        document.getElementById('lesson').value = entry.lesson;
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function deleteEntry(e, id) {
+        e.stopPropagation(); // กันไม่ให้มันไปวิ่งเข้าฟังก์ชัน editEntry
+        if(confirm('คุณแน่ใจใช่ไหมที่จะลบไม้นี้?')) {
+            journalEntries = journalEntries.filter(item => item.id !== id);
+            saveToLocalStorage();
+            renderEntries();
+            resetForm();
+        }
+    }
+
+    function resetForm() {
+        document.getElementById('journalForm').reset();
+        document.getElementById('entryId').value = '';
+        document.getElementById('formTitle').innerText = "📝 เพิ่มบันทึกการเทรดใหม่";
+    }
+
+    function saveToLocalStorage() {
+        localStorage.setItem('temp_journal', JSON.stringify(journalEntries));
+    }
+
+    /** ==========================================
+     *  ระบบ File System Access (เปิดและเซฟทับไฟล์)
+     *  ========================================== */
+
+    // 1. เปิดไฟล์ JSON เดิมที่มีอยู่เข้ามาในแอป
+    async function openFile() {
+        try {
+            [fileHandle] = await window.showOpenFilePicker({
+                types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }],
+                multiple: false
+            });
+            
+            const file = await fileHandle.getFile();
+            const contents = await file.text();
+            journalEntries = JSON.parse(contents);
+            
+            // สั่งจัดเรียงข้อมูล
+            journalEntries.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
+            
+            renderEntries();
+            document.getElementById('fileStatus').innerText = `สถานะ: กำลังเชื่อมโยงกับไฟล์ [ ${file.name} ]`;
+            alert('โหลดข้อมูลจากไฟล์สำเร็จแล้วครับ!');
+        } catch (err) {
+            if(err.name !== 'AbortError') alert('เกิดข้อผิดพลาดในการเปิดไฟล์: ' + err.message);
+        }
+    }
+
+    // 2. เซฟทับไฟล์เดิมที่เปิดอยู่ (Save)
+    async function saveFile() {
+        if (!fileHandle) {
+            // ถ้ายังไม่เคยเปิดไฟล์มาก่อนเลย ให้เปลี่ยนไปทำเป็น Save As แทน
+            saveFileAs();
+            return;
+        }
+        try {
+            const writable = await fileHandle.createWritable();
+            await writable.write(JSON.stringify(journalEntries, null, 2));
+            await writable.close();
+            alert('บันทึกทับไฟล์เดิมเรียบร้อยแล้ว!');
+        } catch (err) {
+            alert('ไม่สามารถเซฟทับได้: ' + err.message);
+        }
+    }
+
+    // 3. บันทึกเป็นไฟล์ใหม่ (Save As)
+    async function saveFileAs() {
+        try {
+            fileHandle = await window.showSaveFilePicker({
+                suggestedName: 'my-trading-journal.json',
+                types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }]
+            });
+            const writable = await fileHandle.createWritable();
+            await writable.write(JSON.stringify(journalEntries, null, 2));
+            await writable.close();
+            
+            const file = await fileHandle.getFile();
+            document.getElementById('fileStatus').innerText = `สถานะ: กำลังเชื่อมโยงกับไฟล์ [ ${file.name} ]`;
+            alert('สร้างและบันทึกไฟล์ใหม่สำเร็จ!');
+        } catch (err) {
+            if(err.name !== 'AbortError') alert('เกิดข้อผิดพลาดในการบันทึก: ' + err.message);
+        }
+    }
+</script>
+
+</body>
+</html>
