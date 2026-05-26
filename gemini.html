@@ -1,438 +1,798 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Trading Journal</title>
-    <style>
-        :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --text-color: #f8fafc;
-            --border-color: #334155;
-            --primary: #38bdf8;
-            --success: #22c55e;
-            --danger: #ef4444;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .header-actions {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            background: var(--card-bg);
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
-        button {
-            background-color: var(--border-color);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.2s;
-        }
-        button:hover { opacity: 0.9; }
-        button.btn-primary { background-color: var(--primary); color: #000; }
-        button.btn-success { background-color: var(--success); }
-        .main-layout {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 20px;
-        }
-        .card {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
-        h2 { margin-top: 0; color: var(--primary); font-size: 1.2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;}
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 0.9rem;
-            color: #94a3b8;
-        }
-        input, select, textarea {
-            width: 100%;
-            padding: 8px;
-            background: #0f172a;
-            border: 1px solid var(--border-color);
-            color: white;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        .row-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-        .journal-list {
-            max-height: 700px;
-            overflow-y: auto;
-        }
-        .journal-item {
-            background: #0f172a;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 10px;
-            border-left: 5px solid var(--border-color);
-            cursor: pointer;
-            position: relative;
-        }
-        .journal-item:hover { border-color: var(--primary); }
-        .item-header {
-            display: flex;
-            justify-content: space-between;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .pnl-badge {
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-        }
-        .pnl-profit { background: rgba(34, 197, 94, 0.2); color: var(--success); }
-        .pnl-loss { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
-        .item-meta { font-size: 0.85rem; color: #64748b; }
-        .delete-btn {
-            position: absolute;
-            right: 15px;
-            bottom: 15px;
-            background: var(--danger);
-            padding: 3px 8px;
-            font-size: 0.8rem;
-        }
-        .status-bar {
-            font-size: 0.9rem;
-            color: #64748b;
-            align-self: center;
-            margin-left: auto;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Journal Pro</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --bg2: #0f1117;
+    --card: #13161e;
+    --card2: #191d28;
+    --border: #1e2333;
+    --border2: #262c3d;
+    --text: #c8cfe0;
+    --muted: #606880;
+    --green: #00e5a0;
+    --green-dim: rgba(0,229,160,0.12);
+    --red: #ff4d6a;
+    --red-dim: rgba(255,77,106,0.12);
+    --amber: #ffb347;
+    --blue: #4d9fff;
+    --purple: #a78bfa;
+    --accent: #00e5a0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── LAYOUT ── */
+  .wrap { max-width: 1380px; margin: 0 auto; padding: 24px 20px; }
+
+  /* ── HEADER ── */
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 24px; background: var(--card); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+  .logo span { color: var(--green); }
+  .topbar-actions { display: flex; gap: 8px; }
+  .btn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border2); background: var(--card2); color: var(--text); font-size: 13px; font-family: inherit; cursor: pointer; transition: all .15s; font-weight: 500; }
+  .btn:hover { border-color: var(--green); color: var(--green); }
+  .btn-primary { background: var(--green); color: #000; border-color: var(--green); font-weight: 700; }
+  .btn-primary:hover { background: #00c48a; color: #000; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 4px; padding: 16px 0 0; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .tab { padding: 8px 20px; border-radius: 8px 8px 0 0; border: none; background: none; color: var(--muted); font-size: 14px; font-family: inherit; cursor: pointer; font-weight: 500; transition: all .15s; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab.active { color: var(--green); border-bottom-color: var(--green); background: var(--green-dim); }
+  .tab:hover:not(.active) { color: var(--text); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── STAT CARDS ── */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+  .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 8px; }
+  .stat-val { font-size: 26px; font-weight: 700; font-family: 'JetBrains Mono', monospace; line-height: 1; }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .green { color: var(--green); }
+  .red { color: var(--red); }
+  .amber { color: var(--amber); }
+  .blue { color: var(--blue); }
+  .purple { color: var(--purple); }
+
+  /* ── CHART GRID ── */
+  .chart-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .chart-box { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+  .chart-box h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .chart-wrap { position: relative; height: 240px; }
+  .chart-wrap-sm { position: relative; height: 200px; }
+
+  /* ── FORM ── */
+  .form-box { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 24px; }
+  .form-box h2 { font-size: 15px; font-weight: 600; margin-bottom: 18px; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.7px; }
+  input[type=text], input[type=number], input[type=date], select, textarea {
+    background: var(--bg2); border: 1px solid var(--border2); color: var(--text);
+    padding: 10px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;
+    transition: border-color .15s; outline: none; width: 100%;
+  }
+  input[type=text]:focus, input[type=number]:focus, input[type=date]:focus, select:focus, textarea:focus {
+    border-color: var(--green);
+  }
+  select option { background: var(--bg2); }
+  textarea { resize: vertical; min-height: 70px; }
+  .form-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .upload-area {
+    border: 1.5px dashed var(--border2); border-radius: 8px; padding: 14px;
+    text-align: center; cursor: pointer; transition: all .15s; font-size: 12px; color: var(--muted);
+    background: var(--bg2);
+  }
+  .upload-area:hover { border-color: var(--green); color: var(--green); }
+  .upload-area input { display: none; }
+  .preview-thumb { width: 60px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border2); margin-top: 6px; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-bar input, .filter-bar select { max-width: 180px; }
+  .filter-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .badge { padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.3px; }
+  .badge-green { background: var(--green-dim); color: var(--green); }
+  .badge-red { background: var(--red-dim); color: var(--red); }
+  .badge-amber { background: rgba(255,179,71,0.12); color: var(--amber); }
+  .badge-blue { background: rgba(77,159,255,0.12); color: var(--blue); }
+  .badge-purple { background: rgba(167,139,250,0.12); color: var(--purple); }
+
+  /* ── TRADE TABLE ── */
+  .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--card2); color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--card2); }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  td .thumb-sm { width: 48px; height: 32px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 1px solid var(--border2); }
+  .action-btn { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px 6px; border-radius: 4px; font-size: 14px; transition: color .15s; }
+  .action-btn:hover { color: var(--red); }
+
+  /* ── TRADE CARDS ── */
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+  .trade-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: border-color .2s; }
+  .trade-card:hover { border-color: var(--border2); }
+  .trade-card.win { border-top: 2px solid var(--green); }
+  .trade-card.loss { border-top: 2px solid var(--red); }
+  .card-img { width: 100%; height: 170px; object-fit: cover; cursor: pointer; background: var(--bg2); display: block; }
+  .card-img-placeholder { width: 100%; height: 80px; background: var(--bg2); display: flex; align-items: center; justify-content: center; color: var(--border2); font-size: 28px; }
+  .card-body { padding: 14px 16px; }
+  .card-top { display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px; }
+  .card-pair { font-size: 16px; font-weight: 700; }
+  .card-date { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .card-pnl { font-size: 20px; font-weight: 700; font-family: 'JetBrains Mono', monospace; text-align: right; }
+  .card-meta { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+  .card-prices { font-size: 12px; color: var(--muted); display: flex; gap: 14px; margin: 6px 0; }
+  .card-prices span b { color: var(--text); font-family: 'JetBrains Mono', monospace; }
+  .card-note { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.5; border-top: 1px solid var(--border); padding-top: 8px; }
+  .card-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+
+  /* ── MODAL ── */
+  #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 1000; align-items: center; justify-content: center; }
+  #modal img { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
+  #modal .close-btn { position: absolute; top: 20px; right: 24px; background: var(--card); border: 1px solid var(--border2); color: var(--text); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty .icon { font-size: 40px; margin-bottom: 12px; }
+  .empty p { font-size: 14px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .chart-grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .topbar { flex-wrap: wrap; gap: 10px; }
+  }
+
+  /* ── ANALYSIS GRID ── */
+  .analysis-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .breakdown-list { list-style: none; padding: 0; }
+  .breakdown-item { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .breakdown-item:last-child { border-bottom: none; }
+  .progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 4px; }
+  .progress-fill { height: 100%; border-radius: 2px; background: var(--green); }
+
+  /* ── TOAST ── */
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--card); border: 1px solid var(--green); color: var(--green); padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; z-index: 999; display: none; }
+</style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Smart Trading Journal</h1>
-    
-    <!-- ส่วนจัดการไฟล์ -->
-    <div class="header-actions">
-        <button class="btn-primary" onclick="openFile()">📂 เปิดไฟล์ JSON</button>
-        <button class="btn-success" onclick="saveFile()">💾 บันทึกทับไฟล์เดิม</button>
-        <button onclick="saveFileAs()">💾 บันทึกเป็นไฟล์ใหม่ (Save As)</button>
-        <div class="status-bar" id="fileStatus">สถานะ: ยังไม่ได้เปิดไฟล์ (ระบบจะเซฟลงสเปซชั่วคราวให้ก่อน)</div>
-    </div>
-
-    <div class="main-layout">
-        <!-- ฝั่งฟอร์มกรอกและแก้ไขข้อมูล -->
-        <div class="card">
-            <h2 id="formTitle">📝 เพิ่มบันทึกการเทรดใหม่</h2>
-            <form id="journalForm" onsubmit="saveEntry(event)">
-                <input type="hidden" id="entryId">
-                
-                <div class="form-group">
-                    <label>วัน-เวลา (Date/Time)</label>
-                    <input type="datetime-local" id="dateTime" required>
-                </div>
-
-                <div class="row-grid">
-                    <div class="form-group">
-                        <label>สินทรัพย์ (Asset)</label>
-                        <input type="text" id="asset" placeholder="เช่น XAU/USD, BTC" required>
-                    </div>
-                    <div class="form-group">
-                        <label>ทิศทาง (Direction)</label>
-                        <select id="direction">
-                            <option value="Buy/Long">Buy / Long</option>
-                            <option value="Sell/Short">Sell / Short</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Position Size / Leverage / Lot</label>
-                    <input type="text" id="positionSize" placeholder="เช่น 0.1 Lot หรือ 100 บัญชี 20x">
-                </div>
-
-                <div class="row-grid">
-                    <div class="form-group">
-                        <label>Entry Price</label>
-                        <input type="number" step="any" id="entryPrice">
-                    </div>
-                    <div class="form-group">
-                        <label>Exit Price</label>
-                        <input type="number" step="any" id="exitPrice">
-                    </div>
-                </div>
-
-                <div class="row-grid">
-                    <div class="form-group">
-                        <label>SL</label>
-                        <input type="number" step="any" id="slPrice">
-                    </div>
-                    <div class="form-group">
-                        <label>TP</label>
-                        <input type="number" step="any" id="tpPrice">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Net Profit/Loss ($ หรือ %)</label>
-                    <input type="number" step="any" id="pnl" placeholder="ใส่ติดลบหากขาดทุน เช่น -50" required>
-                </div>
-
-                <h2>🎯 เหตุผลและสภาวะจิตใจ</h2>
-
-                <div class="form-group">
-                    <label>Setup / Strategy (เทคนิคที่ใช้)</label>
-                    <input type="text" id="strategy" placeholder="เช่น QM Pattern M15, ทะลุแนวต้าน H1">
-                </div>
-
-                <div class="form-group">
-                    <label>Confluence (เหตุผลสนับสนุน)</label>
-                    <textarea id="confluence" rows="2" placeholder="เช่น ราคาชน Order Block + เกิด Divergence ใน RSI"></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label>Pre-Trade Mindset (อารมณ์ก่อนเทรด)</label>
-                    <input type="text" id="mindset" placeholder="เช่น นิ่งตามแผน, FOMO กลัวตกรถ, อยากเอาคืน">
-                </div>
-
-                <div class="form-group">
-                    <label>Execution Review (การคุมแผน)</label>
-                    <select id="execution">
-                        <option value="ทำตามแผน 100%">ทำตามแผน 100%</option>
-                        <option value="ขยับ SL หนี / ปล่อยลาก">ขยับ SL หนี / ปล่อยลาก</option>
-                        <option value="รีบปิดก่อนถึงเป้าเพราะกลัว">รีบปิดก่อนถึงเป้าเพราะกลัว</option>
-                        <option value="เข้าก่อนมีสัญญาณชัดเจน">เข้าก่อนมีสัญญาณชัดเจน</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Key Lesson (บทเรียนที่ได้รับ)</label>
-                    <textarea id="lesson" rows="2" placeholder="ไม้นี้สอนอะไรเรา..."></textarea>
-                </div>
-
-                <div style="display: flex; gap: 10px;">
-                    <button type="submit" class="btn-primary" style="flex: 2;">💾 บันทึกไม้นี้ลงรายการ</button>
-                    <button type="button" onclick="resetForm()" style="flex: 1;">เคลียร์ฟอร์ม</button>
-                </div>
-            </form>
-        </div>
-
-        <!-- ฝั่งแสดงรายการที่บันทึกไว้ -->
-        <div class="card">
-            <h2>📊 รายการบันทึกการเทรดทั้งหมด</h2>
-            <div class="journal-list" id="journalList">
-                <!-- ข้อมูลการเทรดจะมาโผล่ตรงนี้ -->
-            </div>
-        </div>
-    </div>
+<div class="topbar">
+  <div class="logo">Trading <span>Journal</span> Pro</div>
+  <div class="topbar-actions">
+    <button class="btn" onclick="exportJSON()">💾 Export JSON</button>
+    <button class="btn" onclick="document.getElementById('importFile').click()">📂 Import JSON</button>
+    <input type="file" id="importFile" style="display:none" accept=".json" onchange="importJSON(event)">
+    <button class="btn" onclick="exportCSV()">📊 Export CSV</button>
+  </div>
 </div>
 
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('dashboard',this)">📈 Dashboard</button>
+    <button class="tab" onclick="showTab('new-trade',this)">➕ New Trade</button>
+    <button class="tab" onclick="showTab('trades',this)">📋 Trades</button>
+    <button class="tab" onclick="showTab('analysis',this)">🔬 Analysis</button>
+  </div>
+
+  <!-- ═══ DASHBOARD ═══ -->
+  <div id="tab-dashboard" class="tab-content active">
+    <div class="stats-row" id="statsRow"></div>
+    <div class="chart-grid">
+      <div class="chart-box">
+        <h3>Equity Curve</h3>
+        <div class="chart-wrap"><canvas id="equityChart" role="img" aria-label="Equity curve line chart"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <h3>Win / Loss Distribution</h3>
+        <div class="chart-wrap-sm"><canvas id="winLossChart" role="img" aria-label="Win loss donut chart"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-box">
+        <h3>PnL per Trade</h3>
+        <div class="chart-wrap"><canvas id="pnlBarChart" role="img" aria-label="PnL bar chart"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <h3>Monthly PnL</h3>
+        <div class="chart-wrap"><canvas id="monthlyChart" role="img" aria-label="Monthly PnL chart"></canvas></div>
+      </div>
+    </div>
+    <div id="recentCards"></div>
+  </div>
+
+  <!-- ═══ NEW TRADE ═══ -->
+  <div id="tab-new-trade" class="tab-content">
+    <div class="form-box">
+      <h2>📝 บันทึก Trade ใหม่</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Asset / Pair</label>
+          <input list="assetList" id="f-pair" placeholder="BTC/USDT, XAU/USD…">
+          <datalist id="assetList">
+            <option value="BTC/USDT"><option value="ETH/USDT"><option value="XAU/USD">
+            <option value="EUR/USD"><option value="GBP/USD"><option value="USD/JPY">
+            <option value="SOL/USDT"><option value="XRP/USDT"><option value="NASDAQ">
+            <option value="S&P500"><option value="AAPL"><option value="TSLA">
+          </datalist>
+        </div>
+        <div class="form-group">
+          <label>วันที่เปิด</label>
+          <input type="date" id="f-date">
+        </div>
+        <div class="form-group">
+          <label>วันที่ปิด</label>
+          <input type="date" id="f-closedate">
+        </div>
+        <div class="form-group">
+          <label>Direction</label>
+          <select id="f-direction">
+            <option value="LONG">📈 LONG</option>
+            <option value="SHORT">📉 SHORT</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Entry Price</label>
+          <input type="number" id="f-entry" placeholder="0.00" step="any">
+        </div>
+        <div class="form-group">
+          <label>Exit Price</label>
+          <input type="number" id="f-exit" placeholder="0.00" step="any">
+        </div>
+        <div class="form-group">
+          <label>Stop Loss</label>
+          <input type="number" id="f-sl" placeholder="0.00" step="any">
+        </div>
+        <div class="form-group">
+          <label>Take Profit</label>
+          <input type="number" id="f-tp" placeholder="0.00" step="any">
+        </div>
+        <div class="form-group">
+          <label>Lot / Size</label>
+          <input type="number" id="f-lot" placeholder="1.00" step="any">
+        </div>
+        <div class="form-group">
+          <label>PnL ($)</label>
+          <input type="number" id="f-pnl" placeholder="ระบุ PnL เป็น USD" step="any">
+        </div>
+        <div class="form-group">
+          <label>R:R Achieved</label>
+          <input type="number" id="f-rr" placeholder="e.g. 1.5" step="any">
+        </div>
+        <div class="form-group">
+          <label>Session</label>
+          <select id="f-session">
+            <option value="">-- เลือก Session --</option>
+            <option value="Asian">🌏 Asian</option>
+            <option value="London">🇬🇧 London</option>
+            <option value="New York">🗽 New York</option>
+            <option value="London/NY">🔁 London/NY Overlap</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Strategy / Setup</label>
+          <input type="text" id="f-setup" placeholder="e.g. BOS + OB, ICT MSS…">
+        </div>
+        <div class="form-group">
+          <label>Outcome</label>
+          <select id="f-outcome">
+            <option value="Win">✅ Win</option>
+            <option value="Loss">❌ Loss</option>
+            <option value="BE">➖ Break Even</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Emotion / Grade</label>
+          <select id="f-emotion">
+            <option value="A+">⭐ A+ (ปฏิบัติตาม plan ทุกอย่าง)</option>
+            <option value="A">✅ A (ดีมาก)</option>
+            <option value="B">👍 B (ดี)</option>
+            <option value="C">😐 C (พอใช้)</option>
+            <option value="D">⚠️ D (ผิดพลาด)</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Note / Reason / Lesson</label>
+          <textarea id="f-note" placeholder="เหตุผลที่เข้า, บทเรียนที่ได้, สิ่งที่จะปรับปรุง…"></textarea>
+        </div>
+        <div class="form-group full">
+          <label>แนบรูป Chart Screenshot</label>
+          <div class="upload-area" onclick="document.getElementById('f-img').click()" id="uploadArea">
+            📷 คลิกเพื่อเลือกรูป หรือลาก &amp; วางที่นี่
+            <br><small style="color:var(--muted);font-size:11px">รองรับ JPG, PNG, GIF, WebP</small>
+            <br><img id="previewImg" class="preview-thumb" style="display:none">
+          </div>
+          <input type="file" id="f-img" accept="image/*" onchange="previewImage(event)" style="display:none">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addTrade()">🚀 บันทึก Trade</button>
+        <button class="btn" onclick="clearForm()">🗑 ล้างฟอร์ม</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TRADES ═══ -->
+  <div id="tab-trades" class="tab-content">
+    <div class="filter-bar">
+      <span class="filter-label">ค้นหา:</span>
+      <input type="text" id="filterSearch" placeholder="Pair, Setup…" oninput="renderTradesTable()" style="max-width:180px">
+      <select id="filterOutcome" onchange="renderTradesTable()" style="max-width:140px">
+        <option value="">ทุก Outcome</option>
+        <option value="Win">Win</option>
+        <option value="Loss">Loss</option>
+        <option value="BE">Break Even</option>
+      </select>
+      <select id="filterDirection" onchange="renderTradesTable()" style="max-width:140px">
+        <option value="">ทุก Direction</option>
+        <option value="LONG">LONG</option>
+        <option value="SHORT">SHORT</option>
+      </select>
+      <select id="viewMode" onchange="renderTradesTable()" style="max-width:120px">
+        <option value="table">📋 ตาราง</option>
+        <option value="cards">🃏 Cards</option>
+      </select>
+    </div>
+    <div id="tradesView"></div>
+  </div>
+
+  <!-- ═══ ANALYSIS ═══ -->
+  <div id="tab-analysis" class="tab-content">
+    <div class="analysis-grid" id="analysisContent"></div>
+  </div>
+
+</div>
+
+<div id="modal" onclick="closeModal(event)">
+  <span class="close-btn" onclick="document.getElementById('modal').style.display='none'">✕</span>
+  <img id="modalImg" src="">
+</div>
+<div id="toast"></div>
+
 <script>
-    let journalEntries = [];
-    let fileHandle = null;
+let trades = JSON.parse(localStorage.getItem('trades_v2') || '[]');
+let tempImg = '';
+let equityChartObj, winLossChartObj, pnlBarObj, monthlyChartObj;
 
-    // โหลดข้อมูลจาก LocalStorage เผื่อไว้กรณีผู้ใช้ยังไม่ได้เปิดไฟล์
-    if(localStorage.getItem('temp_journal')) {
-        journalEntries = JSON.parse(localStorage.getItem('temp_journal'));
-        renderEntries();
-    }
+// ── TABS ──
+function showTab(id, el) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  el.classList.add('active');
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'trades') renderTradesTable();
+  if (id === 'analysis') renderAnalysis();
+}
 
-    // ฟังก์ชันบันทึกข้อมูลจากฟอร์ม (ทั้งเพิ่มใหม่และแก้ไข)
-    function saveEntry(e) {
-        e.preventDefault();
-        const id = document.getElementById('entryId').value;
-        
-        const entryData = {
-            id: id ? parseInt(id) : Date.now(),
-            dateTime: document.getElementById('dateTime').value,
-            asset: document.getElementById('asset').value,
-            direction: document.getElementById('direction').value,
-            positionSize: document.getElementById('positionSize').value,
-            entryPrice: document.getElementById('entryPrice').value,
-            exitPrice: document.getElementById('exitPrice').value,
-            slPrice: document.getElementById('slPrice').value,
-            tpPrice: document.getElementById('tpPrice').value,
-            pnl: parseFloat(document.getElementById('pnl').value),
-            strategy: document.getElementById('strategy').value,
-            confluence: document.getElementById('confluence').value,
-            mindset: document.getElementById('mindset').value,
-            execution: document.getElementById('execution').value,
-            lesson: document.getElementById('lesson').value
-        };
+// ── FORM ──
+function previewImage(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    tempImg = ev.target.result;
+    const img = document.getElementById('previewImg');
+    img.src = tempImg; img.style.display = 'inline';
+    document.getElementById('uploadArea').style.borderColor = 'var(--green)';
+  };
+  reader.readAsDataURL(file);
+}
 
-        if (id) {
-            // เคสแก้ไข (Edit)
-            const index = journalEntries.findIndex(item => item.id === parseInt(id));
-            journalEntries[index] = entryData;
-        } else {
-            // เคสเพิ่มใหม่ (Add)
-            journalEntries.push(entryData);
-        }
+function clearForm() {
+  ['f-pair','f-entry','f-exit','f-sl','f-tp','f-lot','f-pnl','f-rr','f-setup','f-note'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f-date').value = '';
+  document.getElementById('f-closedate').value = '';
+  tempImg = '';
+  document.getElementById('previewImg').style.display = 'none';
+  document.getElementById('uploadArea').style.borderColor = '';
+}
 
-        // เรียงลำดับตามวันที่ล่าสุดขึ้นก่อน
-        journalEntries.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
+function addTrade() {
+  const pair = document.getElementById('f-pair').value.trim().toUpperCase();
+  const date = document.getElementById('f-date').value;
+  const pnlRaw = document.getElementById('f-pnl').value;
+  if (!pair) { showToast('⚠️ กรุณาระบุ Asset/Pair'); return; }
+  if (!date) { showToast('⚠️ กรุณาระบุวันที่'); return; }
+  if (pnlRaw === '') { showToast('⚠️ กรุณาระบุ PnL'); return; }
 
-        saveToLocalStorage();
-        renderEntries();
-        resetForm();
-    }
+  const t = {
+    id: Date.now(),
+    pair, date,
+    closedate: document.getElementById('f-closedate').value,
+    direction: document.getElementById('f-direction').value,
+    entry: parseFloat(document.getElementById('f-entry').value) || null,
+    exit: parseFloat(document.getElementById('f-exit').value) || null,
+    sl: parseFloat(document.getElementById('f-sl').value) || null,
+    tp: parseFloat(document.getElementById('f-tp').value) || null,
+    lot: parseFloat(document.getElementById('f-lot').value) || null,
+    pnl: parseFloat(pnlRaw),
+    rr: parseFloat(document.getElementById('f-rr').value) || null,
+    session: document.getElementById('f-session').value,
+    setup: document.getElementById('f-setup').value.trim(),
+    outcome: document.getElementById('f-outcome').value,
+    emotion: document.getElementById('f-emotion').value,
+    note: document.getElementById('f-note').value.trim(),
+    img: tempImg
+  };
+  trades.push(t);
+  save();
+  clearForm();
+  showToast('✅ บันทึก Trade เรียบร้อย!');
+  showTab('dashboard', document.querySelectorAll('.tab')[0]);
+}
 
-    // ฟังก์ชันแสดงรายการเทรดในหน้าเว็บ
-    function renderEntries() {
-        const listContainer = document.getElementById('journalList');
-        listContainer.innerHTML = '';
+// ── SAVE / LOAD ──
+function save() { localStorage.setItem('trades_v2', JSON.stringify(trades)); }
 
-        journalEntries.forEach(entry => {
-            const isProfit = entry.pnl >= 0;
-            const item = document.createElement('div');
-            item.className = 'journal-item';
-            item.style.borderLeftColor = isProfit ? 'var(--success)' : 'var(--danger)';
-            item.setAttribute('onclick', `editEntry(${entry.id})`);
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(trades, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `TradingJournal_${new Date().toISOString().slice(0,10)}.json`; a.click();
+}
 
-            item.innerHTML = `
-                <div class="item-header">
-                    <span>${entry.asset} (${entry.direction})</span>
-                    <span class="pnl-badge ${isProfit ? 'pnl-profit' : 'pnl-loss'}">${isProfit ? '+' : ''}${entry.pnl}</span>
-                </div>
-                <div class="item-meta">
-                    📅 ${entry.dateTime.replace('T', ' ')} | 🧠 Setup: ${entry.strategy || 'ไม่ได้ระบุ'}
-                </div>
-                <div style="font-size:0.85rem; margin-top:5px; color:#cbd5e1;">
-                    💬 ${entry.lesson ? entry.lesson : '-'}
-                </div>
-                <button class="delete-btn" onclick="deleteEntry(event, ${entry.id})">ลบ</button>
-            `;
-            listContainer.appendChild(item);
-        });
-    }
+function importJSON(e) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try { trades = JSON.parse(ev.target.result); save(); renderDashboard(); showToast('✅ Import สำเร็จ ' + trades.length + ' trades'); }
+    catch { showToast('❌ ไฟล์ไม่ถูกต้อง'); }
+  };
+  reader.readAsText(e.target.files[0]);
+}
 
-    // ดึงข้อมูลเก่าขึ้นมาบนฟอร์มเพื่อแก้ไข
-    function editEntry(id) {
-        const entry = journalEntries.find(item => item.id === id);
-        if (!entry) return;
+function exportCSV() {
+  const headers = ['Date','CloseDate','Pair','Direction','Entry','Exit','SL','TP','Lot','PnL','RR','Session','Setup','Outcome','Emotion','Note'];
+  const rows = trades.map(t => [
+    t.date, t.closedate||'', t.pair, t.direction||'', t.entry||'', t.exit||'',
+    t.sl||'', t.tp||'', t.lot||'', t.pnl, t.rr||'', t.session||'', t.setup||'', t.outcome||'', t.emotion||'',
+    (t.note||'').replace(/,/g,' ')
+  ]);
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `TradingJournal_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+}
 
-        document.getElementById('formTitle').innerText = "✏️ แก้ไขบันทึกการเทรด";
-        document.getElementById('entryId').value = entry.id;
-        document.getElementById('dateTime').value = entry.dateTime;
-        document.getElementById('asset').value = entry.asset;
-        document.getElementById('direction').value = entry.direction;
-        document.getElementById('positionSize').value = entry.positionSize;
-        document.getElementById('entryPrice').value = entry.entryPrice;
-        document.getElementById('exitPrice').value = entry.exitPrice;
-        document.getElementById('slPrice').value = entry.slPrice;
-        document.getElementById('tpPrice').value = entry.tpPrice;
-        document.getElementById('pnl').value = entry.pnl;
-        document.getElementById('strategy').value = entry.strategy;
-        document.getElementById('confluence').value = entry.confluence;
-        document.getElementById('mindset').value = entry.mindset;
-        document.getElementById('execution').value = entry.execution;
-        document.getElementById('lesson').value = entry.lesson;
-        
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+// ── STATS CALC ──
+function calcStats() {
+  if (!trades.length) return { total:0, wins:0, losses:0, be:0, wr:0, net:0, avgWin:0, avgLoss:0, maxDD:0, profitFactor:0, avgRR:0 };
+  const wins = trades.filter(t => t.outcome === 'Win');
+  const losses = trades.filter(t => t.outcome === 'Loss');
+  const net = trades.reduce((s,t) => s + t.pnl, 0);
+  const avgWin = wins.length ? wins.reduce((s,t) => s+t.pnl, 0) / wins.length : 0;
+  const avgLoss = losses.length ? losses.reduce((s,t) => s+t.pnl, 0) / losses.length : 0;
+  const gross = wins.reduce((s,t) => s+t.pnl, 0);
+  const grossLoss = Math.abs(losses.reduce((s,t) => s+t.pnl, 0));
+  const pf = grossLoss > 0 ? gross / grossLoss : gross > 0 ? 999 : 0;
+  const rrArr = trades.filter(t=>t.rr).map(t=>t.rr);
+  const avgRR = rrArr.length ? rrArr.reduce((s,v)=>s+v,0)/rrArr.length : 0;
+  // drawdown
+  let peak=0, equity=0, maxDD=0;
+  [...trades].sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(t=>{
+    equity += t.pnl; if(equity>peak) peak=equity;
+    const dd = peak - equity; if(dd>maxDD) maxDD=dd;
+  });
+  return { total:trades.length, wins:wins.length, losses:losses.length,
+    be: trades.filter(t=>t.outcome==='BE').length,
+    wr: trades.length ? (wins.length/trades.length*100) : 0,
+    net, avgWin, avgLoss, maxDD, profitFactor:pf, avgRR };
+}
 
-    function deleteEntry(e, id) {
-        e.stopPropagation(); // กันไม่ให้มันไปวิ่งเข้าฟังก์ชัน editEntry
-        if(confirm('คุณแน่ใจใช่ไหมที่จะลบไม้นี้?')) {
-            journalEntries = journalEntries.filter(item => item.id !== id);
-            saveToLocalStorage();
-            renderEntries();
-            resetForm();
-        }
-    }
+// ── DASHBOARD ──
+function renderDashboard() {
+  const s = calcStats();
+  const statsRow = document.getElementById('statsRow');
+  const fmt = v => v >= 0 ? '+$'+v.toFixed(0) : '-$'+Math.abs(v).toFixed(0);
+  statsRow.innerHTML = `
+    <div class="stat-card"><div class="stat-label">Net Profit</div><div class="stat-val ${s.net>=0?'green':'red'}">${fmt(s.net)}</div><div class="stat-sub">${s.total} trades total</div></div>
+    <div class="stat-card"><div class="stat-label">Win Rate</div><div class="stat-val ${s.wr>=50?'green':'amber'}">${s.wr.toFixed(1)}%</div><div class="stat-sub">${s.wins}W / ${s.losses}L / ${s.be}BE</div></div>
+    <div class="stat-card"><div class="stat-label">Profit Factor</div><div class="stat-val ${s.profitFactor>=1.5?'green':s.profitFactor>=1?'amber':'red'}">${s.profitFactor > 99 ? '∞' : s.profitFactor.toFixed(2)}</div><div class="stat-sub">Gross W / Gross L</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Win</div><div class="stat-val green">${s.avgWin>=0?'+':''}\$${s.avgWin.toFixed(0)}</div><div class="stat-sub">per winning trade</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Loss</div><div class="stat-val red">-\$${Math.abs(s.avgLoss).toFixed(0)}</div><div class="stat-sub">per losing trade</div></div>
+    <div class="stat-card"><div class="stat-label">Max Drawdown</div><div class="stat-val red">-\$${s.maxDD.toFixed(0)}</div><div class="stat-sub">peak to trough</div></div>
+    <div class="stat-card"><div class="stat-label">Avg R:R</div><div class="stat-val purple">${s.avgRR.toFixed(2)}</div><div class="stat-sub">risk reward avg</div></div>
+  `;
+  renderCharts(s);
+  renderRecentCards();
+}
 
-    function resetForm() {
-        document.getElementById('journalForm').reset();
-        document.getElementById('entryId').value = '';
-        document.getElementById('formTitle').innerText = "📝 เพิ่มบันทึกการเทรดใหม่";
-    }
+function renderCharts(s) {
+  const sorted = [...trades].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  let eq = 0; const eqLabels=['0'], eqData=[0];
+  sorted.forEach((t,i)=>{ eq+=t.pnl; eqLabels.push(i+1); eqData.push(parseFloat(eq.toFixed(2))); });
 
-    function saveToLocalStorage() {
-        localStorage.setItem('temp_journal', JSON.stringify(journalEntries));
-    }
+  // Equity chart
+  const ectx = document.getElementById('equityChart').getContext('2d');
+  if (equityChartObj) equityChartObj.destroy();
+  equityChartObj = new Chart(ectx, {
+    type:'line',
+    data:{ labels:eqLabels, datasets:[{
+      label:'Equity ($)', data:eqData, borderColor:'#00e5a0', tension:0.3,
+      fill:true, backgroundColor:'rgba(0,229,160,0.07)', pointRadius:2, pointHoverRadius:5
+    }]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} },
+      scales:{ y:{grid:{color:'#1e2333'}, ticks:{color:'#606880',font:{size:11}}},
+               x:{grid:{display:false}, ticks:{color:'#606880',font:{size:11},maxTicksLimit:8}} } }
+  });
 
-    /** ==========================================
-     *  ระบบ File System Access (เปิดและเซฟทับไฟล์)
-     *  ========================================== */
+  // Win/Loss donut
+  const wlctx = document.getElementById('winLossChart').getContext('2d');
+  if (winLossChartObj) winLossChartObj.destroy();
+  winLossChartObj = new Chart(wlctx, {
+    type:'doughnut',
+    data:{ labels:['Win','Loss','BE'],
+      datasets:[{ data:[s.wins,s.losses,s.be], backgroundColor:['#00e5a0','#ff4d6a','#ffb347'],
+        borderColor:'#13161e', borderWidth:3 }]},
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'65%',
+      plugins:{ legend:{ position:'bottom', labels:{ color:'#c8cfe0', font:{size:12}, boxWidth:12, padding:16 } } } }
+  });
 
-    // 1. เปิดไฟล์ JSON เดิมที่มีอยู่เข้ามาในแอป
-    async function openFile() {
-        try {
-            [fileHandle] = await window.showOpenFilePicker({
-                types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }],
-                multiple: false
-            });
-            
-            const file = await fileHandle.getFile();
-            const contents = await file.text();
-            journalEntries = JSON.parse(contents);
-            
-            // สั่งจัดเรียงข้อมูล
-            journalEntries.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
-            
-            renderEntries();
-            document.getElementById('fileStatus').innerText = `สถานะ: กำลังเชื่อมโยงกับไฟล์ [ ${file.name} ]`;
-            alert('โหลดข้อมูลจากไฟล์สำเร็จแล้วครับ!');
-        } catch (err) {
-            if(err.name !== 'AbortError') alert('เกิดข้อผิดพลาดในการเปิดไฟล์: ' + err.message);
-        }
-    }
+  // PnL bar
+  const barctx = document.getElementById('pnlBarChart').getContext('2d');
+  if (pnlBarObj) pnlBarObj.destroy();
+  const last20 = sorted.slice(-20);
+  pnlBarObj = new Chart(barctx, {
+    type:'bar',
+    data:{ labels:last20.map(t=>t.pair),
+      datasets:[{ label:'PnL ($)', data:last20.map(t=>t.pnl),
+        backgroundColor:last20.map(t=>t.pnl>=0?'rgba(0,229,160,0.7)':'rgba(255,77,106,0.7)'),
+        borderRadius:4 }]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} },
+      scales:{ y:{grid:{color:'#1e2333'},ticks:{color:'#606880',font:{size:11}}},
+               x:{grid:{display:false},ticks:{color:'#606880',font:{size:11},maxRotation:45}} } }
+  });
 
-    // 2. เซฟทับไฟล์เดิมที่เปิดอยู่ (Save)
-    async function saveFile() {
-        if (!fileHandle) {
-            // ถ้ายังไม่เคยเปิดไฟล์มาก่อนเลย ให้เปลี่ยนไปทำเป็น Save As แทน
-            saveFileAs();
-            return;
-        }
-        try {
-            const writable = await fileHandle.createWritable();
-            await writable.write(JSON.stringify(journalEntries, null, 2));
-            await writable.close();
-            alert('บันทึกทับไฟล์เดิมเรียบร้อยแล้ว!');
-        } catch (err) {
-            alert('ไม่สามารถเซฟทับได้: ' + err.message);
-        }
-    }
+  // Monthly PnL
+  const mctx = document.getElementById('monthlyChart').getContext('2d');
+  if (monthlyChartObj) monthlyChartObj.destroy();
+  const monthly = {};
+  sorted.forEach(t => { const k = t.date.slice(0,7); monthly[k] = (monthly[k]||0) + t.pnl; });
+  const mLabels = Object.keys(monthly).sort();
+  const mData = mLabels.map(k=>parseFloat(monthly[k].toFixed(2)));
+  monthlyChartObj = new Chart(mctx, {
+    type:'bar',
+    data:{ labels:mLabels.map(l=>l.replace('-','/')),
+      datasets:[{ label:'Monthly PnL ($)', data:mData,
+        backgroundColor:mData.map(v=>v>=0?'rgba(0,229,160,0.7)':'rgba(255,77,106,0.7)'),
+        borderRadius:4 }]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} },
+      scales:{ y:{grid:{color:'#1e2333'},ticks:{color:'#606880',font:{size:11}}},
+               x:{grid:{display:false},ticks:{color:'#606880',font:{size:11}}} } }
+  });
+}
 
-    // 3. บันทึกเป็นไฟล์ใหม่ (Save As)
-    async function saveFileAs() {
-        try {
-            fileHandle = await window.showSaveFilePicker({
-                suggestedName: 'my-trading-journal.json',
-                types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }]
-            });
-            const writable = await fileHandle.createWritable();
-            await writable.write(JSON.stringify(journalEntries, null, 2));
-            await writable.close();
-            
-            const file = await fileHandle.getFile();
-            document.getElementById('fileStatus').innerText = `สถานะ: กำลังเชื่อมโยงกับไฟล์ [ ${file.name} ]`;
-            alert('สร้างและบันทึกไฟล์ใหม่สำเร็จ!');
-        } catch (err) {
-            if(err.name !== 'AbortError') alert('เกิดข้อผิดพลาดในการบันทึก: ' + err.message);
-        }
-    }
+function renderRecentCards() {
+  const el = document.getElementById('recentCards');
+  const recent = [...trades].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,6);
+  if (!recent.length) { el.innerHTML=''; return; }
+  el.innerHTML = `<h3 style="font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Recent Trades</h3>
+    <div class="cards-grid">${recent.map(cardHTML).join('')}</div>`;
+}
+
+// ── TRADES TABLE ──
+function renderTradesTable() {
+  const search = document.getElementById('filterSearch').value.toLowerCase();
+  const outcome = document.getElementById('filterOutcome').value;
+  const direction = document.getElementById('filterDirection').value;
+  const view = document.getElementById('viewMode').value;
+  const el = document.getElementById('tradesView');
+
+  let filtered = [...trades].sort((a,b)=>new Date(b.date)-new Date(a.date))
+    .filter(t => {
+      if (outcome && t.outcome !== outcome) return false;
+      if (direction && t.direction !== direction) return false;
+      if (search && !`${t.pair} ${t.setup} ${t.note||''}`.toLowerCase().includes(search)) return false;
+      return true;
+    });
+
+  if (!filtered.length) { el.innerHTML='<div class="empty"><div class="icon">📭</div><p>ไม่มี trade ที่ตรงเงื่อนไข</p></div>'; return; }
+
+  if (view === 'cards') {
+    el.innerHTML = `<div class="cards-grid">${filtered.map(cardHTML).join('')}</div>`;
+    return;
+  }
+
+  el.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr>
+      <th>#</th><th>Date</th><th>Pair</th><th>Dir</th><th>Entry</th><th>Exit</th>
+      <th>SL</th><th>TP</th><th>Lot</th><th>PnL ($)</th><th>R:R</th>
+      <th>Setup</th><th>Session</th><th>Outcome</th><th>Grade</th><th>Chart</th><th>Action</th>
+    </tr></thead>
+    <tbody>
+    ${filtered.map((t,i)=>`<tr>
+      <td class="mono" style="color:var(--muted)">${filtered.length-i}</td>
+      <td>${t.date}</td>
+      <td><b>${t.pair}</b></td>
+      <td><span class="badge ${t.direction==='LONG'?'badge-green':'badge-red'}">${t.direction||'-'}</span></td>
+      <td class="mono">${t.entry||'-'}</td>
+      <td class="mono">${t.exit||'-'}</td>
+      <td class="mono" style="color:var(--red)">${t.sl||'-'}</td>
+      <td class="mono" style="color:var(--green)">${t.tp||'-'}</td>
+      <td class="mono">${t.lot||'-'}</td>
+      <td class="mono ${t.pnl>=0?'green':'red'}" style="font-weight:700">${t.pnl>=0?'+':''}${t.pnl.toFixed(2)}</td>
+      <td class="mono">${t.rr||'-'}</td>
+      <td>${t.setup ? `<span style="font-size:12px">${t.setup}</span>` : '-'}</td>
+      <td>${t.session ? `<span class="badge badge-blue" style="font-size:10px">${t.session}</span>` : '-'}</td>
+      <td><span class="badge ${t.outcome==='Win'?'badge-green':t.outcome==='Loss'?'badge-red':'badge-amber'}">${t.outcome||'-'}</span></td>
+      <td><span class="badge badge-purple">${t.emotion||'-'}</span></td>
+      <td>${t.img ? `<img src="${t.img}" class="thumb-sm" onclick="zoom('${t.id}')">` : '-'}</td>
+      <td><button class="action-btn" onclick="deleteTrade(${t.id})" title="Delete">🗑</button></td>
+    </tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+function cardHTML(t) {
+  const isWin = t.pnl >= 0;
+  return `<div class="trade-card ${isWin?'win':'loss'}">
+    ${t.img
+      ? `<img src="${t.img}" class="card-img" onclick="zoom('${t.id}')" alt="chart">`
+      : `<div class="card-img-placeholder">📷</div>`}
+    <div class="card-body">
+      <div class="card-top">
+        <div>
+          <div class="card-pair">${t.pair}</div>
+          <div class="card-date">${t.date}${t.closedate?' → '+t.closedate:''}</div>
+        </div>
+        <div class="card-pnl ${isWin?'green':'red'}">${isWin?'+':''}\$${t.pnl.toFixed(2)}</div>
+      </div>
+      <div class="card-meta">
+        ${t.direction?`<span class="badge ${t.direction==='LONG'?'badge-green':'badge-red'}">${t.direction}</span>`:''}
+        ${t.outcome?`<span class="badge ${t.outcome==='Win'?'badge-green':t.outcome==='Loss'?'badge-red':'badge-amber'}">${t.outcome}</span>`:''}
+        ${t.emotion?`<span class="badge badge-purple">${t.emotion}</span>`:''}
+        ${t.session?`<span class="badge badge-blue" style="font-size:10px">${t.session}</span>`:''}
+      </div>
+      <div class="card-prices">
+        ${t.entry?`<span>IN: <b>${t.entry}</b></span>`:''}
+        ${t.exit?`<span>OUT: <b>${t.exit}</b></span>`:''}
+        ${t.sl?`<span style="color:var(--red)">SL: <b>${t.sl}</b></span>`:''}
+        ${t.tp?`<span style="color:var(--green)">TP: <b>${t.tp}</b></span>`:''}
+        ${t.rr?`<span>R:R <b>${t.rr}</b></span>`:''}
+      </div>
+      ${t.setup?`<div style="font-size:12px;color:var(--purple);margin:4px 0">📌 ${t.setup}</div>`:''}
+      ${t.note?`<div class="card-note">${t.note}</div>`:''}
+      <div class="card-actions">
+        <button class="action-btn" onclick="deleteTrade(${t.id})" title="ลบ">🗑 ลบ</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function deleteTrade(id) {
+  if (!confirm('ลบ trade นี้?')) return;
+  trades = trades.filter(t=>t.id!==id); save(); renderDashboard(); renderTradesTable(); showToast('🗑 ลบแล้ว');
+}
+
+// ── ANALYSIS ──
+function renderAnalysis() {
+  const el = document.getElementById('analysisContent');
+  if (!trades.length) { el.innerHTML='<div class="empty"><div class="icon">📊</div><p>ยังไม่มีข้อมูล Trade</p></div>'; return; }
+
+  // By setup
+  const bySetup = {};
+  trades.forEach(t => { const k = t.setup||'Unknown'; bySetup[k] = bySetup[k]||{c:0,w:0,pnl:0}; bySetup[k].c++; if(t.outcome==='Win')bySetup[k].w++; bySetup[k].pnl+=t.pnl; });
+  const setupList = Object.entries(bySetup).sort((a,b)=>b[1].pnl-a[1].pnl);
+
+  // By session
+  const bySess = {};
+  trades.forEach(t=>{const k=t.session||'Unknown';bySess[k]=bySess[k]||{c:0,w:0,pnl:0};bySess[k].c++;if(t.outcome==='Win')bySess[k].w++;bySess[k].pnl+=t.pnl;});
+
+  // By day
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const byDay = {};
+  days.forEach(d=>byDay[d]={c:0,w:0,pnl:0});
+  trades.forEach(t=>{const d=days[new Date(t.date).getDay()];byDay[d].c++;if(t.outcome==='Win')byDay[d].w++;byDay[d].pnl+=t.pnl;});
+
+  // By emotion/grade
+  const byEmotion = {};
+  trades.forEach(t=>{const k=t.emotion||'Unknown';byEmotion[k]=byEmotion[k]||{c:0,w:0,pnl:0};byEmotion[k].c++;if(t.outcome==='Win')byEmotion[k].w++;byEmotion[k].pnl+=t.pnl;});
+
+  el.innerHTML = `
+    <div class="chart-box">
+      <h3>Performance by Setup</h3>
+      <ul class="breakdown-list">
+        ${setupList.map(([k,v])=>`
+          <li class="breakdown-item">
+            <div><div style="font-size:13px;font-weight:500">${k}</div><div style="font-size:11px;color:var(--muted)">${v.c} trades | WR: ${v.c>0?(v.w/v.c*100).toFixed(0):'0'}%</div></div>
+            <div class="mono ${v.pnl>=0?'green':'red'}" style="font-size:14px;font-weight:700">${v.pnl>=0?'+':''}$${v.pnl.toFixed(0)}</div>
+          </li>`).join('')}
+      </ul>
+    </div>
+    <div class="chart-box">
+      <h3>Performance by Session</h3>
+      <ul class="breakdown-list">
+        ${Object.entries(bySess).map(([k,v])=>`
+          <li class="breakdown-item">
+            <div><div style="font-size:13px;font-weight:500">${k}</div><div style="font-size:11px;color:var(--muted)">${v.c} trades | WR: ${v.c>0?(v.w/v.c*100).toFixed(0):'0'}%</div></div>
+            <div class="mono ${v.pnl>=0?'green':'red'}" style="font-weight:700">${v.pnl>=0?'+':''}$${v.pnl.toFixed(0)}</div>
+          </li>`).join('')}
+      </ul>
+    </div>
+    <div class="chart-box">
+      <h3>Performance by Day of Week</h3>
+      <ul class="breakdown-list">
+        ${Object.entries(byDay).filter(([,v])=>v.c>0).map(([k,v])=>`
+          <li class="breakdown-item">
+            <div style="width:100%">
+              <div style="display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:500">${k}</span><span class="mono ${v.pnl>=0?'green':'red'}" style="font-weight:700">${v.pnl>=0?'+':''}$${v.pnl.toFixed(0)}</span></div>
+              <div style="font-size:11px;color:var(--muted)">${v.c} trades | WR: ${(v.w/v.c*100).toFixed(0)}%</div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${(v.w/v.c*100).toFixed(0)}%;background:${v.pnl>=0?'var(--green)':'var(--red)'}"></div></div>
+            </div>
+          </li>`).join('')}
+      </ul>
+    </div>
+    <div class="chart-box">
+      <h3>Performance by Grade (Emotion)</h3>
+      <ul class="breakdown-list">
+        ${Object.entries(byEmotion).map(([k,v])=>`
+          <li class="breakdown-item">
+            <div><div style="font-size:13px;font-weight:500">${k}</div><div style="font-size:11px;color:var(--muted)">${v.c} trades | WR: ${(v.w/v.c*100).toFixed(0)}%</div></div>
+            <div class="mono ${v.pnl>=0?'green':'red'}" style="font-weight:700">${v.pnl>=0?'+':''}$${v.pnl.toFixed(0)}</div>
+          </li>`).join('')}
+      </ul>
+    </div>
+  `;
+}
+
+// ── MODAL / ZOOM ──
+function zoom(id) {
+  const t = trades.find(x=>x.id===id);
+  if (!t || !t.img) return;
+  document.getElementById('modalImg').src = t.img;
+  document.getElementById('modal').style.display = 'flex';
+}
+function closeModal(e) { if(e.target===document.getElementById('modal')) document.getElementById('modal').style.display='none'; }
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.innerText = msg; t.style.display = 'block';
+  setTimeout(()=>t.style.display='none', 2500);
+}
+
+// ── DRAG DROP ──
+const ua = document.getElementById('uploadArea');
+ua.addEventListener('dragover', e => { e.preventDefault(); ua.style.borderColor='var(--green)'; });
+ua.addEventListener('dragleave', () => ua.style.borderColor='');
+ua.addEventListener('drop', e => {
+  e.preventDefault(); ua.style.borderColor='';
+  const file = e.dataTransfer.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    tempImg = ev.target.result;
+    const img = document.getElementById('previewImg');
+    img.src=tempImg; img.style.display='inline';
+    ua.style.borderColor='var(--green)';
+  };
+  reader.readAsDataURL(file);
+});
+
+// ── INIT ──
+document.getElementById('f-date').valueAsDate = new Date();
+document.getElementById('f-closedate').valueAsDate = new Date();
+renderDashboard();
 </script>
-
 </body>
 </html>
